@@ -35,7 +35,7 @@
 
 #include "threed_beam_fea.h"
 
-#define DEBUG
+//#define DEBUG
 
 namespace fea {
 
