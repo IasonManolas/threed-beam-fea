@@ -413,9 +413,9 @@ Summary solve(const Job &job, const std::vector<BC> &BCs,
     loadForces(force_vec, forces);
   }
 #ifdef DEBUG
-  Eigen::MatrixXd KgDense(Kg);
+//  Eigen::MatrixXd KgDense(Kg);
   //    std::cout << KgDense << std::endl;
-  Eigen::VectorXd forcesVectorDense(force_vec);
+//  Eigen::VectorXd forcesVectorDense(force_vec);
 //    std::cout << forcesVectorDense << std::endl;
 #endif
   // compress global stiffness matrix since all non-zero values have been added.
@@ -464,7 +464,9 @@ Summary solve(const Job &job, const std::vector<BC> &BCs,
   // Compute the numerical factorization
   start_time = std::chrono::high_resolution_clock::now();
   solver.factorize(Kg);
+  if(options.verbose){
   std::cout << solver.lastErrorMessage() << std::endl;
+  }
   assert(solver.info() == Eigen::Success);
   end_time = std::chrono::high_resolution_clock::now();
 
