@@ -18,7 +18,7 @@ set(EXT_RAPIDJSON_ROOT ${CMAKE_CURRENT_LIST_DIR}/ext/rapidjson/include)
 set(EXT_TCLAP_ROOT ${CMAKE_CURRENT_LIST_DIR}/ext/tclap-1.2.1/include)
 
 #include_directories(${EXT_BOOST_ROOT})
-add_library(${PROJECT_NAME} src/cmd.cpp src/setup.cpp src/summary.cpp src/threed_beam_fea.cpp)
+add_library(${PROJECT_NAME}#[[ src/cmd.cpp]] src/setup.cpp src/summary.cpp src/threed_beam_fea.cpp)
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include/
