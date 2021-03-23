@@ -141,6 +141,7 @@ void GlobalStiffAssembler::calcKelem(unsigned int i, const Job &job) {
   calcAelem(r);
   AelemT = Aelem.transpose();
 
+#ifdef DEBUG
   std::ofstream KlocalFile("Klocal.csv");
   if (KlocalFile.is_open()) {
     const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision,
@@ -148,6 +149,7 @@ void GlobalStiffAssembler::calcKelem(unsigned int i, const Job &job) {
     KlocalFile << Klocal.format(CSVFormat) << '\n';
     KlocalFile.close();
   }
+#endif
   // update Kelem
   Kelem = AelemT * Klocal * Aelem;
   //  std::ofstream KelemFile("Kelem.csv");
