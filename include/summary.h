@@ -121,6 +121,11 @@ struct Summary {
   unsigned long num_eqns;
 
   /**
+   * @brief true if the solution was aquired error-less false otherwise
+   */
+  bool converged;
+
+  /**
    * The resultant nodal displacement from the FE analysis.
    * `nodal_displacements` is a 2D vector where each row
    * correspond to a node, and the columns correspond to

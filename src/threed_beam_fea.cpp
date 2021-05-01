@@ -130,8 +130,10 @@ void GlobalStiffAssembler::calcKelem(unsigned int i, const Job &job) {
   // calculate unit normal vector along local x-direction
   const Eigen::Vector3d nx = (job.nodes[nn2] - job.nodes[nn1]).normalized();
   // calculate unit normal vector along y-direction
-  const Eigen::Vector3d ny = job.props[i].normal_vec.normalized();
+  //  const Eigen::Vector3d ny = job.props[i].normal_vec.normalized();
+  const Eigen::Vector3d ny = job.props[i].normal_vec.normalized().cross(nx).normalized();
   // calculate the unit normal vector in local z direction
+  //  const Eigen::Vector3d nz = nx.cross(ny).normalized();
   const Eigen::Vector3d nz = nx.cross(ny).normalized();
   RotationMatrix r;
   r.row(0) = nx;
@@ -415,14 +417,14 @@ Summary solve(const Job &job, const std::vector<BC> &BCs,
     loadForces(force_vec, forces);
   }
 #ifdef DEBUG
-//  Eigen::MatrixXd KgDense(Kg);
-  //    std::cout << KgDense << std::endl;
-//  Eigen::VectorXd forcesVectorDense(force_vec);
+  Eigen::MatrixXd KgDense(Kg);
+  //      std::cout << KgDense << std::endl;
+  Eigen::VectorXd forcesVectorDense(force_vec);
 //    std::cout << forcesVectorDense << std::endl;
 #endif
-  // compress global stiffness matrix since all non-zero values have been added.
-  Kg.prune(1.e-14);
-  Kg.makeCompressed();
+    // compress global stiffness matrix since all non-zero values have been added.
+    Kg.prune(1.e-14);
+    Kg.makeCompressed();
 #ifdef DEBUG
   std::ofstream kgFile("Kg.csv");
   if (kgFile.is_open()) {
@@ -466,10 +468,11 @@ Summary solve(const Job &job, const std::vector<BC> &BCs,
   // Compute the numerical factorization
   start_time = std::chrono::high_resolution_clock::now();
   solver.factorize(Kg);
-  if(options.verbose){
-  std::cout << solver.lastErrorMessage() << std::endl;
-  }
-  assert(solver.info() == Eigen::Success);
+#ifdef DEBUG
+  Eigen::VectorXd kgCol(Kg.col(7));
+  Eigen::FullPivLU<Eigen::MatrixXd> kg_invCheck(Kg);
+  assert(kg_invCheck.isInvertible());
+#endif
   end_time = std::chrono::high_resolution_clock::now();
 
   delta_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time -
@@ -480,6 +483,13 @@ Summary solve(const Job &job, const std::vector<BC> &BCs,
   if (options.verbose)
     std::cout << "Factorization completed in " << delta_time
               << " ms. Now solving system..." << std::endl;
+
+  if (solver.info() != Eigen::Success) {
+      std::cout << solver.lastErrorMessage() << std::endl;
+      summary.converged = false;
+      assert(solver.info() == Eigen::Success);
+      return summary;
+  }
 
   // Use the factors to solve the linear system
   start_time = std::chrono::high_resolution_clock::now();
@@ -493,6 +503,12 @@ Summary solve(const Job &job, const std::vector<BC> &BCs,
 
   if (options.verbose)
     std::cout << "System was solved in " << delta_time << " ms.\n" << std::endl;
+  assert(solver.info() == Eigen::Success);
+  if (solver.info() != Eigen::Success) {
+      std::cout << solver.lastErrorMessage() << std::endl;
+      summary.converged = false;
+      return summary;
+  }
 
   // convert to dense matrix
   Eigen::VectorXd disp(dispSparse);
@@ -622,8 +638,7 @@ Summary solve(const Job &job, const std::vector<BC> &BCs,
     Eigen::Matrix<double, 12, 1> elemForces =
         perElemKlocalAelem[elemIndex] * elemDisps;
     for (int dofIndex = 0; dofIndex < DOF::NUM_DOFS; dofIndex++) {
-      summary.element_forces[elemIndex][static_cast<size_t>(dofIndex)] =
-          -elemForces(dofIndex);
+        summary.element_forces[elemIndex][static_cast<size_t>(dofIndex)] = -elemForces(dofIndex);
     }
     // meaning of sign = reference to first node:
     // + = compression for axial, - traction
@@ -639,6 +654,8 @@ Summary solve(const Job &job, const std::vector<BC> &BCs,
     csv.write(options.elemental_forces_filename, summary.element_forces,
               options.csv_precision, options.csv_delimiter);
   }
+
+  summary.converged = true;
 
   return summary;
 };
